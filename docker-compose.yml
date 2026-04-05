@@ -1,0 +1,70 @@
+services:
+  market-data:
+    build:
+      context: .
+      dockerfile: services/market-data/Dockerfile
+    environment:
+      - MARKET_DATA_PORT=3001
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(3001).on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  history-api:
+    build:
+      context: .
+      dockerfile: services/history-api/Dockerfile
+    environment:
+      - HISTORY_API_PORT=3002
+      - MARKET_DATA_WS=ws://market-data:3001
+    ports:
+      - "3002:3002"
+    depends_on:
+      market-data:
+        condition: service_healthy
+
+  alert-engine:
+    build:
+      context: .
+      dockerfile: services/alert-engine/Dockerfile
+    environment:
+      - ALERT_ENGINE_PORT=3003
+      - MARKET_DATA_WS=ws://market-data:3001
+    ports:
+      - "3003:3003"
+    depends_on:
+      market-data:
+        condition: service_healthy
+
+  auth:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    environment:
+      - AUTH_PORT=3004
+      - JWT_SECRET=sk-mbg-assignment-secret-key
+    ports:
+      - "3004:3004"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "5173:5173"
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - market-data
+      - history-api
+      - alert-engine
+      - auth
+      - frontend
