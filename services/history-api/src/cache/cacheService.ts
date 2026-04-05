@@ -1,16 +1,34 @@
-import type { OHLC } from "@trading/shared";
+import NodeCache from "node-cache";
+import type { OHLC, Timeframe } from "@trading/shared";
 
-/**
- * Cache service — currently a passthrough (no-op).
- * Swap to real NodeCache implementation in bonus phase
- * without changing any route logic.
- */
+/** TTL in seconds per timeframe — shorter timeframes expire faster */
+const TTL_MAP: Record<Timeframe, number> = {
+  "1m": 10,
+  "5m": 30,
+  "15m": 60,
+  "1h": 120,
+  "1d": 300,
+};
+
 export class CacheService {
-  get(_key: string): OHLC[] | null {
-    return null; // always miss
+  private cache: NodeCache;
+
+  constructor() {
+    this.cache = new NodeCache({ checkperiod: 30 });
   }
 
-  set(_key: string, _data: OHLC[]): void {
-    // no-op
+  get(key: string): OHLC[] | null {
+    const data = this.cache.get<OHLC[]>(key);
+    if (data) {
+      console.log(`[cache] hit: ${key}`);
+      return data;
+    }
+    return null;
+  }
+
+  set(key: string, data: OHLC[]): void {
+    const timeframe = key.split(":")[1] as Timeframe;
+    const ttl = TTL_MAP[timeframe] || 30;
+    this.cache.set(key, data, ttl);
   }
 }
