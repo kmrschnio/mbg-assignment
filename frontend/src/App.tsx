@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { usePriceStore } from "./stores/priceStore";
+import { LiveChart } from "./components/Chart/LiveChart";
 
 const ALL_TICKERS = ["AAPL", "TSLA", "MSFT", "GOOGL", "NVDA", "BTC-USD", "ETH-USD"];
 
@@ -45,10 +46,10 @@ function App() {
       </div>
 
       <div style={{ padding: "20px", background: "#161b22", borderRadius: "8px", border: "1px solid #30363d" }}>
-        <h2 style={{ color: "#58a6ff" }}>
+        <h2 style={{ color: "#58a6ff", marginBottom: "16px" }}>
           {selectedTicker} — {prices[selectedTicker] ? `$${prices[selectedTicker].price.toFixed(2)}` : "Loading..."}
         </h2>
-        <p style={{ color: "#8b949e" }}>Chart coming in next task...</p>
+        <LiveChart ticker={selectedTicker} />
       </div>
     </div>
   );
