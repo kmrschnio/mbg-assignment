@@ -1,7 +1,11 @@
 import { useState, useMemo } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { usePriceStore } from "./stores/priceStore";
+import { Header } from "./components/Layout/Header";
+import { Dashboard } from "./components/Layout/Dashboard";
+import { TickerList } from "./components/TickerList/TickerList";
 import { LiveChart } from "./components/Chart/LiveChart";
+import { AlertPanel } from "./components/Alerts/AlertPanel";
 
 const ALL_TICKERS = ["AAPL", "TSLA", "MSFT", "GOOGL", "NVDA", "BTC-USD", "ETH-USD"];
 
@@ -12,45 +16,53 @@ function App() {
   useWebSocket(tickerList);
 
   const prices = usePriceStore((s) => s.prices);
+  const currentPrice = prices[selectedTicker];
 
   return (
-    <div style={{ padding: "20px", fontFamily: "monospace", background: "#0d1117", color: "#c9d1d9", minHeight: "100vh" }}>
-      <h1 style={{ color: "#58a6ff", marginBottom: "24px" }}>Trading Dashboard</h1>
-
-      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "24px" }}>
-        {tickerList.map((ticker) => {
-          const data = prices[ticker];
-          const isUp = data ? data.price >= data.prevPrice : true;
-          const isSelected = ticker === selectedTicker;
-
-          return (
-            <div
-              key={ticker}
-              onClick={() => setSelectedTicker(ticker)}
-              style={{
-                padding: "12px 16px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                background: isSelected ? "#1f2937" : "#161b22",
-                border: isSelected ? "1px solid #58a6ff" : "1px solid #30363d",
-                minWidth: "120px",
-              }}
-            >
-              <div style={{ fontWeight: "bold", marginBottom: "4px" }}>{ticker}</div>
-              <div style={{ color: isUp ? "#3fb950" : "#f85149", fontSize: "18px" }}>
-                {data ? `$${data.price.toFixed(2)}` : "—"}
-              </div>
+    <div style={{ background: "#0d1117", color: "#c9d1d9", minHeight: "100vh", fontFamily: "monospace" }}>
+      <Header />
+      <Dashboard
+        sidebar={
+          <>
+            <TickerList
+              tickers={tickerList}
+              selectedTicker={selectedTicker}
+              onSelect={setSelectedTicker}
+            />
+            <AlertPanel />
+          </>
+        }
+        main={
+          <div
+            style={{
+              padding: "20px",
+              background: "#161b22",
+              borderRadius: "8px",
+              border: "1px solid #30363d",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "16px" }}>
+              <h2 style={{ color: "#f0f6fc", margin: 0, fontSize: "20px" }}>
+                {selectedTicker}
+              </h2>
+              {currentPrice && (
+                <div style={{ textAlign: "right" }}>
+                  <span
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: "bold",
+                      color: currentPrice.price >= currentPrice.prevPrice ? "#3fb950" : "#f85149",
+                    }}
+                  >
+                    ${currentPrice.price.toFixed(2)}
+                  </span>
+                </div>
+              )}
             </div>
-          );
-        })}
-      </div>
-
-      <div style={{ padding: "20px", background: "#161b22", borderRadius: "8px", border: "1px solid #30363d" }}>
-        <h2 style={{ color: "#58a6ff", marginBottom: "16px" }}>
-          {selectedTicker} — {prices[selectedTicker] ? `$${prices[selectedTicker].price.toFixed(2)}` : "Loading..."}
-        </h2>
-        <LiveChart ticker={selectedTicker} />
-      </div>
+            <LiveChart ticker={selectedTicker} />
+          </div>
+        }
+      />
     </div>
   );
 }
