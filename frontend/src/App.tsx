@@ -9,6 +9,7 @@ import { TickerList } from "./components/TickerList/TickerList";
 import { LiveChart } from "./components/Chart/LiveChart";
 import type { ChartType } from "./components/Chart/LiveChart";
 import { AlertPanel } from "./components/Alerts/AlertPanel";
+import { AlertForm } from "./components/Alerts/AlertForm";
 
 const ALL_TICKERS = ["AAPL", "TSLA", "MSFT", "GOOGL", "NVDA", "BTC-USD", "ETH-USD"];
 
@@ -43,6 +44,7 @@ function DashboardView() {
               selectedTicker={selectedTicker}
               onSelect={setSelectedTicker}
             />
+            <AlertForm ticker={selectedTicker} currentPrice={currentPrice?.price} />
             <AlertPanel />
           </>
         }
