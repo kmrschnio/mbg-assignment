@@ -13,7 +13,7 @@ export function TickerList({ tickers, selectedTicker, onSelect }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <h3 style={{ color: "#8b949e", fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 4px 0" }}>
-        Instruments
+        Stocks
       </h3>
       {tickers.map((ticker) => (
         <TickerCard

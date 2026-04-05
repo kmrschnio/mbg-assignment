@@ -1,4 +1,9 @@
+import { useAuthStore } from "../../stores/authStore";
+
 export function Header() {
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+
   return (
     <header
       style={{
@@ -24,25 +29,49 @@ export function Header() {
           Trading Dashboard
         </h1>
       </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          fontSize: "12px",
-          color: "#3fb950",
-        }}
-      >
-        <span
+      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div
           style={{
-            width: "8px",
-            height: "8px",
-            borderRadius: "50%",
-            background: "#3fb950",
-            display: "inline-block",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "12px",
+            color: "#3fb950",
           }}
-        />
-        Live
+        >
+          <span
+            style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              background: "#3fb950",
+              display: "inline-block",
+            }}
+          />
+          Live
+        </div>
+        {user && (
+          <>
+            <span style={{ color: "#8b949e", fontSize: "13px" }}>
+              {user.id}
+            </span>
+            <button
+              onClick={logout}
+              style={{
+                padding: "4px 12px",
+                borderRadius: "6px",
+                border: "1px solid #30363d",
+                background: "transparent",
+                color: "#8b949e",
+                fontSize: "12px",
+                fontFamily: "monospace",
+                cursor: "pointer",
+              }}
+            >
+              Logout
+            </button>
+          </>
+        )}
       </div>
     </header>
   );

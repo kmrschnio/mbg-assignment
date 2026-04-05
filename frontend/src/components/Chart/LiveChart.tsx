@@ -8,29 +8,33 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  Cell,
 } from "recharts";
 import { useHistoryStore } from "../../stores/historyStore";
 import { usePriceStore } from "../../stores/priceStore";
 import { TimeframeSelector } from "./TimeframeSelector";
 
+export type ChartType = "line" | "candlestick";
+
 interface Props {
   ticker: string;
+  chartType: ChartType;
 }
 
-export function LiveChart({ ticker }: Props) {
+const CANDLE_LIMIT = 60;
+
+export function LiveChart({ ticker, chartType }: Props) {
   const { candles, timeframe, loading, loadHistory, setTimeframe, appendTick } =
     useHistoryStore();
   const prevTickerRef = useRef(ticker);
   const prevTimeframeRef = useRef(timeframe);
 
-  // load history when ticker or timeframe changes
   useEffect(() => {
     loadHistory(ticker, timeframe);
     prevTickerRef.current = ticker;
     prevTimeframeRef.current = timeframe;
   }, [ticker, timeframe, loadHistory]);
 
-  // append live ticks to the chart
   const prices = usePriceStore((s) => s.prices);
   const tickData = prices[ticker];
   const prevTimestampRef = useRef<number>(0);
@@ -53,21 +57,27 @@ export function LiveChart({ ticker }: Props) {
     setTimeframe(tf);
   };
 
-  // format chart data
-  const chartData = candles.map((c) => ({
+  // show same number of candles for both chart types
+  const visibleCandles = candles.slice(-CANDLE_LIMIT);
+
+  const allPrices = visibleCandles.flatMap((c) => [c.high, c.low]);
+  const minPrice = allPrices.length ? Math.min(...allPrices) : 0;
+  const maxPrice = allPrices.length ? Math.max(...allPrices) : 100;
+  const padding = (maxPrice - minPrice) * 0.05 || 1;
+  const domainMin = minPrice - padding;
+  const domainMax = maxPrice + padding;
+
+  const chartData = visibleCandles.map((c) => ({
     time: formatTime(c.timestamp, timeframe),
     close: c.close,
     high: c.high,
     low: c.low,
     open: c.open,
     volume: c.volume,
+    // pass domain info for the custom candlestick shape
+    _domainMin: domainMin,
+    _domainMax: domainMax,
   }));
-
-  // compute Y domain with padding
-  const closePrices = candles.map((c) => c.close);
-  const minPrice = Math.min(...closePrices, ...candles.map((c) => c.low));
-  const maxPrice = Math.max(...closePrices, ...candles.map((c) => c.high));
-  const padding = (maxPrice - minPrice) * 0.05 || 1;
 
   return (
     <div>
@@ -88,35 +98,114 @@ export function LiveChart({ ticker }: Props) {
               minTickGap={50}
             />
             <YAxis
-              domain={[minPrice - padding, maxPrice + padding]}
+              domain={[domainMin, domainMax]}
               tick={{ fill: "#8b949e", fontSize: 11 }}
               tickFormatter={(v: number) => v.toFixed(2)}
               width={80}
             />
-            <Tooltip
-              contentStyle={{
-                background: "#161b22",
-                border: "1px solid #30363d",
-                borderRadius: "6px",
-                color: "#c9d1d9",
-                fontFamily: "monospace",
-                fontSize: "12px",
-              }}
-              formatter={(value: number) => [`$${value.toFixed(2)}`, ""]}
-            />
+            <Tooltip content={<CandlestickTooltip />} />
             <Bar dataKey="volume" fill="#21262d" opacity={0.3} yAxisId="volume" />
             <YAxis yAxisId="volume" orientation="right" hide />
-            <Line
-              type="monotone"
-              dataKey="close"
-              stroke="#58a6ff"
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
+
+            {chartType === "line" ? (
+              <Line
+                type="monotone"
+                dataKey="close"
+                stroke="#58a6ff"
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
+            ) : (
+              <Bar
+                dataKey="high"
+                isAnimationActive={false}
+                shape={(props: any) => <CandlestickBar {...props} />}
+              >
+                {chartData.map((entry, i) => (
+                  <Cell
+                    key={i}
+                    fill={entry.close >= entry.open ? "#3fb950" : "#f85149"}
+                  />
+                ))}
+              </Bar>
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       )}
+    </div>
+  );
+}
+
+/** Custom candlestick shape — draws wick + body using SVG */
+function CandlestickBar(props: any) {
+  const { x, y, width, height, payload, fill } = props;
+  if (!payload) return null;
+
+  const { open, close, high, low, _domainMin } = payload;
+
+  // y = pixel position of the "high" value (top of the bar)
+  // y + height = pixel position of the domain minimum (bottom of the bar)
+  // scale maps price difference to pixels
+  const priceRange = high - _domainMin;
+  if (priceRange === 0) return null;
+
+  const pxPerPrice = height / priceRange;
+  const wickX = x + width / 2;
+
+  // wick: from high to low
+  const wickTop = y;
+  const wickBottom = y + (high - low) * pxPerPrice;
+
+  // body: from open to close
+  const bodyTop = y + (high - Math.max(open, close)) * pxPerPrice;
+  const bodyBottom = y + (high - Math.min(open, close)) * pxPerPrice;
+  const bodyH = Math.max(bodyBottom - bodyTop, 2);
+
+  return (
+    <g>
+      <line
+        x1={wickX}
+        y1={wickTop}
+        x2={wickX}
+        y2={wickBottom}
+        stroke={fill}
+        strokeWidth={1.5}
+      />
+      <rect
+        x={x + width * 0.1}
+        y={bodyTop}
+        width={width * 0.8}
+        height={bodyH}
+        fill={fill}
+        rx={1}
+      />
+    </g>
+  );
+}
+
+function CandlestickTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0]?.payload;
+  if (!d) return null;
+
+  return (
+    <div
+      style={{
+        background: "#161b22",
+        border: "1px solid #30363d",
+        borderRadius: "6px",
+        padding: "8px 12px",
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: "#c9d1d9",
+      }}
+    >
+      <div>O: <span style={{ color: "#58a6ff" }}>${d.open.toFixed(2)}</span></div>
+      <div>H: <span style={{ color: "#3fb950" }}>${d.high.toFixed(2)}</span></div>
+      <div>L: <span style={{ color: "#f85149" }}>${d.low.toFixed(2)}</span></div>
+      <div>C: <span style={{ color: "#58a6ff" }}>${d.close.toFixed(2)}</span></div>
+      <div style={{ color: "#8b949e", marginTop: "4px" }}>Vol: {d.volume.toLocaleString()}</div>
     </div>
   );
 }
