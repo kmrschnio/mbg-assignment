@@ -2,12 +2,14 @@ import express from "express";
 import cors from "cors";
 import type { Timeframe } from "@trading/shared";
 import { seedHistory } from "./aggregator/seed.js";
+import { startLiveAggregator } from "./aggregator/liveAggregator.js";
 import { CacheService } from "./cache/cacheService.js";
 import { authMiddleware } from "./middleware/auth.js";
 import tickerRoutes from "./routes/tickers.js";
 import { createHistoryRouter } from "./routes/history.js";
 
 const PORT = parseInt(process.env.HISTORY_API_PORT || "3002", 10);
+const MARKET_DATA_WS = process.env.MARKET_DATA_WS || "ws://localhost:3001";
 
 // seed historical data on startup
 console.log("[history-api] seeding historical data...");
@@ -37,4 +39,7 @@ app.use(
 
 app.listen(PORT, () => {
   console.log(`[history-api] listening on port ${PORT}`);
+
+  // start live aggregation from market-data websocket
+  startLiveAggregator(MARKET_DATA_WS, historyStore);
 });
