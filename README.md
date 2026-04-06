@@ -4,24 +4,7 @@ A microservices-based real-time trading dashboard built for the MultiBank Group 
 
 ## Architecture
 
-```
-                    ┌─────────────┐
-                    │   nginx:80  │
-                    │   Gateway   │
-                    └──────┬──────┘
-           ┌───────────────┼───────────────┐
-           │               │               │
-    ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐
-    │ market-data │ │ history-api │ │alert-engine │
-    │   :3001     │ │   :3002     │ │   :3003     │
-    │  WebSocket  │ │  REST API   │ │  REST + WS  │
-    └──────┬──────┘ └──────┬──────┘ └──────┬──────┘
-           │               │               │
-           │        ┌──────▼──────┐        │
-           └───────►│  auth:3004  │◄───────┘
-                    │    JWT      │
-                    └─────────────┘
-```
+![System Architecture](docs/system-architecture.svg)
 
 **Services:**
 
@@ -74,6 +57,14 @@ docker-compose up --build
 
 Open http://localhost — all services behind nginx gateway.
 
+## Data Flow
+
+![Data Flow](docs/data-flow.svg)
+
+## Frontend Components
+
+![Frontend Components](docs/frontend-components.svg)
+
 ## Key Design Decisions
 
 ### GBM Price Simulation
@@ -81,6 +72,8 @@ Prices use Geometric Brownian Motion with per-ticker drift and volatility parame
 
 ### WebSocket Subscription Model
 Clients subscribe to specific tickers rather than receiving all ticks. The `SubscriptionManager` class maintains a per-client set of subscribed symbols, reducing unnecessary network traffic.
+
+![WebSocket Message Flow](docs/data_websocket.svg)
 
 ### Pre-seeded History
 On startup, history-api generates 500 historical candles per ticker per timeframe using the same GBM function. This ensures reviewers see a full chart immediately without waiting for candle accumulation. Live ticks are aggregated and appended seamlessly.
@@ -91,8 +84,14 @@ Server-side caching with node-cache using TTL scaled by timeframe: 1m bars expir
 ### Auth Architecture
 JWT-based authentication with a dedicated auth microservice. The history-api validates tokens via the auth service but gracefully falls back to a demo user if the auth service is unavailable, ensuring the dashboard works in development without running all services.
 
+![Authentication Flow](docs/auth_flow.svg)
+
 ### Monorepo with Shared Types
 npm workspaces with a `@trading/shared` package containing TypeScript types and ticker configurations. Single source of truth for data contracts across all services.
+
+## Backend Service Internals
+
+![Backend Services](docs/backend_services.svg)
 
 ## Assumptions & Trade-offs
 
@@ -101,6 +100,16 @@ npm workspaces with a `@trading/shared` package containing TypeScript types and 
 - **Hardcoded users** — auth service uses static credentials; sufficient for demonstrating JWT flow
 - **No SSL/TLS** — development setup only; production would terminate TLS at nginx
 - **Single replica** — K8s manifests use 1 replica; market-data is stateful (prices in memory) so horizontal scaling would require shared state
+
+## Infrastructure
+
+### Docker Compose Dependencies
+
+![Docker Dependencies](docs/docker.svg)
+
+### Kubernetes Deployment
+
+![Kubernetes Architecture](docs/kubernetes.svg)
 
 ## Running Tests
 
@@ -143,6 +152,7 @@ trading-dashboard/
 ├── frontend/                 # React + Vite dashboard
 ├── nginx/                    # Gateway config
 ├── k8s/                      # Kubernetes manifests
+├── docs/                     # Architecture diagrams
 ├── docker-compose.yml
 └── README.md
 ```
