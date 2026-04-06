@@ -1,6 +1,6 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
-COPY package.json tsconfig.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/shared ./packages/shared
 COPY services/market-data ./services/market-data
 RUN npm install --workspace=@trading/market-data --workspace=@trading/shared

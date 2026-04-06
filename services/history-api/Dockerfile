@@ -1,6 +1,6 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
-COPY package.json tsconfig.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/shared ./packages/shared
 COPY services/history-api ./services/history-api
 RUN npm install --workspace=@trading/history-api --workspace=@trading/shared
