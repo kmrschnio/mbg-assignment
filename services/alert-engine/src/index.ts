@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import WebSocket from "ws";
+import WebSocket, { WebSocketServer } from "ws";
 import { TICKER_SYMBOLS } from "@trading/shared";
 import { evaluate } from "./evaluator/threshold.js";
 import { createAlert, getAlerts, getActiveAlerts, triggerAlert, deleteAlert } from "./store/rules.js";
@@ -54,7 +54,7 @@ app.delete("/alerts/:id", (req, res) => {
 // connected frontend clients for push notifications
 const frontendClients = new Set<WebSocket>();
 
-const wss = new WebSocket.Server({ noServer: true });
+const wss = new WebSocketServer({ noServer: true });
 
 function connectToMarketData() {
   const ws = new WebSocket(MARKET_DATA_WS);

@@ -1,20 +1,26 @@
 type MessageHandler = (data: any) => void;
 
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:3001";
+const ALERT_WS_URL = import.meta.env.VITE_ALERT_WS_URL || "ws://localhost:3003";
 const RECONNECT_DELAY = 3000;
 
 let ws: WebSocket | null = null;
+let alertWs: WebSocket | null = null;
 let handlers: MessageHandler[] = [];
 let subscribedTickers: string[] = [];
 
 export function connectWS(): void {
+  connectMarketData();
+  connectAlertEngine();
+}
+
+function connectMarketData(): void {
   if (ws && ws.readyState === WebSocket.OPEN) return;
 
   ws = new WebSocket(WS_URL);
 
   ws.onopen = () => {
-    console.log("[ws] connected");
-    // re-subscribe after reconnect
+    console.log("[ws] market-data connected");
     if (subscribedTickers.length > 0) {
       sendSubscribe(subscribedTickers);
     }
@@ -32,13 +38,45 @@ export function connectWS(): void {
   };
 
   ws.onclose = () => {
-    console.log("[ws] disconnected, reconnecting...");
+    console.log("[ws] market-data disconnected, reconnecting...");
     ws = null;
-    setTimeout(connectWS, RECONNECT_DELAY);
+    setTimeout(connectMarketData, RECONNECT_DELAY);
   };
 
   ws.onerror = () => {
     ws?.close();
+  };
+}
+
+function connectAlertEngine(): void {
+  if (alertWs && alertWs.readyState === WebSocket.OPEN) return;
+
+  alertWs = new WebSocket(ALERT_WS_URL);
+
+  alertWs.onopen = () => {
+    console.log("[ws] alert-engine connected");
+  };
+
+  alertWs.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      // alert messages go through the same handler pipeline
+      for (const handler of handlers) {
+        handler(msg);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  alertWs.onclose = () => {
+    console.log("[ws] alert-engine disconnected, reconnecting...");
+    alertWs = null;
+    setTimeout(connectAlertEngine, RECONNECT_DELAY);
+  };
+
+  alertWs.onerror = () => {
+    alertWs?.close();
   };
 }
 
