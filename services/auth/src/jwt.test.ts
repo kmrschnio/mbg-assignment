@@ -15,7 +15,7 @@ describe("jwt", () => {
   });
 
   it("verify rejects expired token", () => {
-    const token = sign({ userId: "123", role: "trader" }, { expiresIn: "0s" });
+    const token = sign({ userId: "123", role: "trader" }, { expiresIn: 0 });
     expect(() => verify(token)).toThrow();
   });
 });

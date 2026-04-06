@@ -7,8 +7,10 @@ export interface JWTPayload {
   role: string;
 }
 
-export function sign(payload: JWTPayload, options?: { expiresIn?: string }): string {
-  return jwt.sign(payload, SECRET, { expiresIn: options?.expiresIn || "24h" });
+export function sign(payload: JWTPayload, options?: { expiresIn?: number }): string {
+  return jwt.sign(payload as object, SECRET, {
+    expiresIn: options?.expiresIn ?? 86400, // default 24h in seconds
+  });
 }
 
 export function verify(token: string): JWTPayload {
