@@ -2,6 +2,32 @@
 
 A microservices-based real-time trading dashboard built for the MultiBank Group coding challenge. Displays live ticker prices and interactive charts for 7 financial instruments using WebSocket streaming and simulated market data.
 
+## User Flow
+
+### 1. Login
+The dashboard requires authentication before access. Enter demo credentials (`trader1` / `password123`) to sign in. JWT token is stored in localStorage for session persistence.
+
+![Login Screen](docs/login.png)
+
+### 2. Live Dashboard — Line Chart
+After login, you land on the dashboard with all 7 tickers updating in real-time on the left sidebar. The main area shows a line chart for the selected ticker. Prices update every second with green/red indicators for price direction. Use the timeframe selector (1m, 5m, 15m, 1h, 1d) to change the chart resolution.
+
+![Line Chart](docs/line.png)
+
+### 3. Candlestick Chart
+Toggle between Line and Candle views using the chart type selector next to the price. Candlestick mode shows OHLC bars with green (bullish) and red (bearish) candles, wicks for high/low range, and a detailed OHLC tooltip on hover.
+
+![Candlestick Chart](docs/candle.png)
+
+### 4. Switch Tickers
+Click any ticker in the sidebar to switch the chart. Historical data loads instantly (pre-seeded 500 candles) and live ticks append in real-time. The price and percent change update live for all tickers simultaneously.
+
+### 5. Set Price Alerts
+Use the alert form below the ticker list to set price threshold alerts (above/below). When the live price crosses your threshold, the alert triggers and appears in the Alerts panel in the sidebar.
+
+### 6. Logout
+Click the Logout button in the header to clear your session and return to the login screen.
+
 ## Architecture
 
 ![System Architecture](docs/system-architecture.svg)
