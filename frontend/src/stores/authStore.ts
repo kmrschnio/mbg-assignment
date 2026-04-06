@@ -7,7 +7,7 @@ interface AuthStore {
   logout: () => void;
 }
 
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://localhost:3004";
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || `${window.location.origin}/api`;
 
 export const useAuthStore = create<AuthStore>((set) => ({
   token: localStorage.getItem("token"),

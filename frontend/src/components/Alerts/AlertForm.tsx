@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const ALERT_URL = import.meta.env.VITE_ALERT_URL || "http://localhost:3003";
+const ALERT_URL = import.meta.env.VITE_ALERT_URL || `${window.location.origin}/api`;
 
 interface Props {
   ticker: string;

@@ -1,7 +1,8 @@
 type MessageHandler = (data: any) => void;
 
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:3001";
-const ALERT_WS_URL = import.meta.env.VITE_ALERT_WS_URL || "ws://localhost:3003";
+const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+const WS_URL = import.meta.env.VITE_WS_URL || `${wsProtocol}//${window.location.host}/ws`;
+const ALERT_WS_URL = import.meta.env.VITE_ALERT_WS_URL || `${wsProtocol}//${window.location.host}/ws/alerts`;
 const RECONNECT_DELAY = 3000;
 
 let ws: WebSocket | null = null;
